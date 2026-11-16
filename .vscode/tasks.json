@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Android: test and build debug APK",
+      "type": "shell",
+      "command": "gradle --no-daemon testDebugUnitTest assembleDebug",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: install debug APK",
+      "type": "shell",
+      "command": "adb install -r app/build/outputs/apk/debug/app-debug.apk",
+      "dependsOn": "Android: test and build debug APK",
+      "problemMatcher": []
+    }
+  ]
+}
