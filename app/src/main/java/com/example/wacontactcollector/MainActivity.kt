@@ -73,6 +73,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.wacontactcollector.data.CaptureHistoryEntity
 import com.example.wacontactcollector.data.CustomerEntity
+import com.example.wacontactcollector.data.PendingPhone
 import com.example.wacontactcollector.data.ScanStatus
 import com.example.wacontactcollector.data.isWhatsAppAccessibilityEnabled
 import java.text.DateFormat
@@ -95,7 +96,7 @@ private fun WAContactCollectorApp(viewModel: MainViewModel) {
     val customers by viewModel.customers.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val monitoring by viewModel.monitoring.collectAsStateWithLifecycle()
-    val pendingPhone by viewModel.pendingPhone.collectAsStateWithLifecycle()
+    val detectedPhones by viewModel.detectedPhones.collectAsStateWithLifecycle()
     val scanStatus by viewModel.scanStatus.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val serviceEnabled = rememberAccessibilityEnabled(context)
@@ -176,14 +177,12 @@ private fun WAContactCollectorApp(viewModel: MainViewModel) {
                     }
                 }
             }
-            if (pendingPhone != null) {
-                item {
-                    PendingPhoneCard(
-                        phone = pendingPhone!!.normalizedPhone,
-                        onSave = viewModel::approvePendingPhone,
-                        onDismiss = viewModel::dismissPendingPhone
-                    )
-                }
+            if (detectedPhones.isNotEmpty()) item {
+                DetectedPhonesCard(
+                    phones = detectedPhones,
+                    onSave = viewModel::approvePhone,
+                    onDismiss = viewModel::dismissPhone
+                )
             }
             item {
                 Card {
@@ -292,15 +291,21 @@ private fun MonitoringCard(
 }
 
 @Composable
-private fun PendingPhoneCard(phone: String, onSave: () -> Unit, onDismiss: () -> Unit) {
+private fun DetectedPhonesCard(
+    phones: List<PendingPhone>,
+    onSave: (String) -> Unit,
+    onDismiss: (String) -> Unit
+) {
     Card {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Nomor terdeteksi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(phone, style = MaterialTheme.typography.headlineSmall)
-            Text("Simpan hanya jika nomor ini memang disetujui untuk dicatat.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onSave) { Text("Simpan nomor") }
-                TextButton(onClick = onDismiss) { Text("Abaikan") }
+            Text("Nomor terdeteksi (${phones.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Daftar ini berasal dari event scroll manual sesi aktif. Simpan hanya nomor yang diizinkan.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            phones.forEach { pending ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(pending.normalizedPhone, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                    TextButton(onClick = { onSave(pending.normalizedPhone) }) { Text("Simpan") }
+                    TextButton(onClick = { onDismiss(pending.normalizedPhone) }) { Text("Abaikan") }
+                }
             }
         }
     }

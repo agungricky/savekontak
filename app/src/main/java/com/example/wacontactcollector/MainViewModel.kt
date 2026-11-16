@@ -27,7 +27,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList()
     )
     val monitoring: StateFlow<Boolean> = CaptureSessionStore.monitoring
-    val pendingPhone = CaptureSessionStore.pendingPhone
+    val detectedPhones = CaptureSessionStore.detectedPhones
     val scanStatus = CaptureSessionStore.scanStatus
 
     private val _message = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
@@ -43,17 +43,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _message.value = "Pantauan dihentikan"
     }
 
-    fun approvePendingPhone() {
-        val pending = CaptureSessionStore.pendingPhone.value ?: return
+    fun approvePhone(phone: String) {
         viewModelScope.launch {
-            val result = repository.recordApprovedCandidate(pending.normalizedPhone)
-            CaptureSessionStore.clearCandidate()
+            val result = repository.recordApprovedCandidate(phone)
+            CaptureSessionStore.removeCandidate(phone)
             _message.value = result.message
         }
     }
 
-    fun dismissPendingPhone() {
-        CaptureSessionStore.clearCandidate()
+    fun dismissPhone(phone: String) {
+        CaptureSessionStore.removeCandidate(phone)
     }
 
     fun deleteAll() {
