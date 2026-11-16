@@ -6,7 +6,7 @@ Aplikasi Android native Kotlin + Jetpack Compose yang berjalan sepenuhnya lokal/
 
 - Tidak memakai endpoint, bearer token, API CRM, server, login, internet, atau WorkManager.
 - `AccessibilityService` hanya menerima event dari `com.whatsapp` dan `com.whatsapp.w4b`.
-- Service disetel `canRetrieveWindowContent=false`, tidak menelusuri node layar, tidak melakukan scrolling otomatis, dan tidak mengambil daftar chat massal.
+- Service hanya membaca node yang sedang terlihat untuk mencari pola nomor, tidak melakukan scrolling otomatis, dan tidak mengambil daftar chat massal.
 - Hanya pola nomor yang ditemukan pada event UI yang diproses; isi pesan, password, media, dan teks lain tidak disimpan.
 - Kandidat nomor ditampilkan di dashboard. Nomor baru masuk Room hanya setelah pengguna menekan `Simpan nomor`.
 - Monitoring bersifat opt-in dan berhenti ketika tombol `Hentikan` ditekan. Untuk menonaktifkan service sepenuhnya, gunakan Pengaturan Android.
