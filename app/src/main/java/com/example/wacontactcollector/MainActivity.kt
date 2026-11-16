@@ -98,25 +98,7 @@ private fun WAContactCollectorApp(viewModel: MainViewModel) {
     }
 
     Scaffold(
-        topBar = {
-            SmallTopAppBar(
-                title = { Text(if (screen == "dashboard") "WA Contact Collector" else "Pengaturan") },
-                navigationIcon = {
-                    if (screen == "settings") {
-                        IconButton(onClick = { screen = "dashboard" }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
-                        }
-                    }
-                },
-                actions = {
-                    if (screen == "dashboard") {
-                        IconButton(onClick = { screen = "settings" }) {
-                            Icon(Icons.Default.Settings, contentDescription = "Pengaturan")
-                        }
-                    }
-                }
-            )
-        },
+        topBar = { MainTopBar(screen = screen, onBack = { screen = "dashboard" }, onSettings = { screen = "settings" }) },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         if (screen == "dashboard") {
@@ -139,6 +121,28 @@ private fun WAContactCollectorApp(viewModel: MainViewModel) {
             )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainTopBar(screen: String, onBack: () -> Unit, onSettings: () -> Unit) {
+    SmallTopAppBar(
+        title = { Text(if (screen == "dashboard") "WA Contact Collector" else "Pengaturan") },
+        navigationIcon = {
+            if (screen == "settings") {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                }
+            }
+        },
+        actions = {
+            if (screen == "dashboard") {
+                IconButton(onClick = onSettings) {
+                    Icon(Icons.Default.Settings, contentDescription = "Pengaturan")
+                }
+            }
+        }
+    )
 }
 
 @Composable
