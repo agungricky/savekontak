@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
@@ -44,12 +45,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -126,7 +127,7 @@ private fun WAContactCollectorApp(viewModel: MainViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainTopBar(screen: String, onBack: () -> Unit, onSettings: () -> Unit) {
-    SmallTopAppBar(
+    TopAppBar(
         title = { Text(if (screen == "dashboard") "WA Contact Collector" else "Pengaturan") },
         navigationIcon = {
             if (screen == "settings") {
