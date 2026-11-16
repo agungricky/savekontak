@@ -13,7 +13,7 @@ class WhatsAppAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         serviceInfo = serviceInfo.apply {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-            packageNames = WHATSAPP_PACKAGES
+            packageNames = WHATSAPP_PACKAGES.toTypedArray()
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = flags and AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS.inv()
             notificationTimeout = 500
