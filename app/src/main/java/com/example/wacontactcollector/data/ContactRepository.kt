@@ -4,13 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.room.Room
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import kotlinx.coroutines.flow.first
-import java.util.concurrent.TimeUnit
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -19,108 +12,66 @@ class AppContainer(context: Context) {
         AppDatabase::class.java,
         "wa_contact_collector.db"
     ).build()
-    val preferences = PreferencesStore(appContext)
-    val repository = ContactRepository(appContext, database, preferences)
+    val repository = ContactRepository(appContext, database)
 }
 
 class ContactRepository(
     private val context: Context,
-    private val database: AppDatabase,
-    private val preferences: PreferencesStore,
-    private val apiClient: OfficialApiClient = OfficialApiClient()
+    private val database: AppDatabase
 ) {
     val total = database.customerDao().observeTotal()
     val customers = database.customerDao().observeAll()
-    val history = database.syncHistoryDao().observeRecent()
+    val history = database.captureHistoryDao().observeRecent()
 
-    suspend fun sync(): SyncOutcome {
+    suspend fun recordApprovedCandidate(rawPhone: String): CaptureResult {
         val started = System.currentTimeMillis()
-        val settings = preferences.settings.first()
-        if (settings.endpoint.isBlank()) {
-            val message = "Endpoint resmi belum dikonfigurasi"
-            database.syncHistoryDao().insert(
-                SyncHistoryEntity(
-                    startedAt = started,
-                    finishedAt = System.currentTimeMillis(),
-                    newCount = 0,
-                    receivedCount = 0,
-                    status = "SKIPPED",
-                    message = message
-                )
-            )
-            return SyncOutcome(0, 0, message)
+        val phone = PhoneNormalizer.normalize(rawPhone)
+        if (phone == null) {
+            recordHistory(started, 0, 0, "INVALID", "Nomor tidak valid")
+            return CaptureResult(null, saved = false, duplicate = false, "Nomor tidak valid")
         }
 
-        return try {
-            require(settings.endpoint.startsWith("https://")) {
-                "Endpoint harus menggunakan HTTPS"
-            }
-            val remote = apiClient.fetch(settings.endpoint, settings.token)
-            val contactChecker = DeviceContactsChecker(context)
-            var newCount = 0
-            remote.forEach { item ->
-                val phone = PhoneNormalizer.normalize(item.phone) ?: return@forEach
-                val inserted = database.customerDao().insert(
-                    CustomerEntity(
-                        phone = phone,
-                        displayName = item.displayName,
-                        source = "official_api",
-                        collectedAt = System.currentTimeMillis(),
-                        isInDeviceContacts = settings.checkDeviceContacts && contactChecker.exists(phone)
-                    )
-                )
-                if (inserted != -1L) newCount++
-            }
-            val message = "Sinkronisasi berhasil"
-            database.syncHistoryDao().insert(
-                SyncHistoryEntity(
-                    startedAt = started,
-                    finishedAt = System.currentTimeMillis(),
-                    newCount = newCount,
-                    receivedCount = remote.size,
-                    status = "SUCCESS",
-                    message = message
-                )
+        val inDeviceContacts = DeviceContactsChecker(context).exists(phone)
+        val inserted = database.customerDao().insert(
+            CustomerEntity(
+                phone = phone,
+                displayName = null,
+                source = "whatsapp_accessibility_approved",
+                collectedAt = System.currentTimeMillis(),
+                isInDeviceContacts = inDeviceContacts
             )
-            SyncOutcome(newCount, remote.size, message)
-        } catch (error: Exception) {
-            val message = error.message?.take(160) ?: "Gagal mengakses endpoint"
-            database.syncHistoryDao().insert(
-                SyncHistoryEntity(
-                    startedAt = started,
-                    finishedAt = System.currentTimeMillis(),
-                    newCount = 0,
-                    receivedCount = 0,
-                    status = "FAILED",
-                    message = message
-                )
-            )
-            SyncOutcome(0, 0, message)
+        )
+        return if (inserted == -1L) {
+            recordHistory(started, 0, 1, "DUPLICATE", "Nomor sudah tersimpan")
+            CaptureResult(phone, saved = false, duplicate = true, "Nomor sudah tersimpan")
+        } else {
+            recordHistory(started, 1, 1, "SAVED", "Nomor disimpan oleh pengguna")
+            CaptureResult(phone, saved = true, duplicate = false, "Nomor berhasil disimpan")
         }
+    }
+
+    private suspend fun recordHistory(
+        started: Long,
+        newCount: Int,
+        receivedCount: Int,
+        status: String,
+        message: String
+    ) {
+        database.captureHistoryDao().insert(
+            CaptureHistoryEntity(
+                startedAt = started,
+                finishedAt = System.currentTimeMillis(),
+                newCount = newCount,
+                receivedCount = receivedCount,
+                status = status,
+                message = message
+            )
+        )
     }
 
     suspend fun deleteAll() {
         database.customerDao().deleteAll()
-        database.syncHistoryDao().deleteAll()
-    }
-
-    fun scheduleSync(enabled: Boolean, intervalHours: Int) {
-        val manager = WorkManager.getInstance(context)
-        if (!enabled) {
-            manager.cancelUniqueWork(SyncWorker.WORK_NAME)
-            return
-        }
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val request = PeriodicWorkRequestBuilder<SyncWorker>(intervalHours.toLong(), TimeUnit.HOURS)
-            .setConstraints(constraints)
-            .build()
-        manager.enqueueUniquePeriodicWork(
-            SyncWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
+        database.captureHistoryDao().deleteAll()
     }
 
     fun launchWhatsApp(business: Boolean): Intent {

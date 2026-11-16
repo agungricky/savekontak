@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">WA Contact Collector</string>
+    <string name="accessibility_service_description">Memantau event terbatas WhatsApp untuk menawarkan nomor kepada pengguna sebelum disimpan. Tidak merekam pesan, media, atau password.</string>
 </resources>

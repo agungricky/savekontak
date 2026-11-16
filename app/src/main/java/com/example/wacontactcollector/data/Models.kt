@@ -13,7 +13,7 @@ data class CustomerEntity(
 )
 
 @Entity(tableName = "sync_history")
-data class SyncHistoryEntity(
+data class CaptureHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val startedAt: Long,
     val finishedAt: Long,
@@ -21,6 +21,24 @@ data class SyncHistoryEntity(
     val receivedCount: Int,
     val status: String,
     val message: String?
+)
+
+data class CaptureResult(
+    val normalizedPhone: String?,
+    val saved: Boolean,
+    val duplicate: Boolean,
+    val message: String
+)
+
+data class PendingPhone(
+    val normalizedPhone: String,
+    val detectedAt: Long = System.currentTimeMillis()
+)
+
+data class ScanStatus(
+    val packageName: String? = null,
+    val eventCount: Long = 0,
+    val lastScanAt: Long? = null
 )
 
 data class RemoteCustomer(

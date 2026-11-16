@@ -3,29 +3,19 @@ package com.example.wacontactcollector
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wacontactcollector.data.AppSettings
+import com.example.wacontactcollector.data.CaptureHistoryEntity
+import com.example.wacontactcollector.data.CaptureSessionStore
 import com.example.wacontactcollector.data.ContactRepository
 import com.example.wacontactcollector.data.CustomerEntity
-import com.example.wacontactcollector.data.SyncHistoryEntity
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class DashboardState(
-    val total: Int = 0,
-    val customers: List<CustomerEntity> = emptyList(),
-    val history: List<SyncHistoryEntity> = emptyList(),
-    val settings: AppSettings = AppSettings(),
-    val isSyncing: Boolean = false,
-    val lastMessage: String? = null
-)
-
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: ContactRepository =
-        (application as WaContactApplication).container.repository
-    private val settings = (application as WaContactApplication).container.preferences.settings
+    private val app = application as WaContactApplication
+    private val repository: ContactRepository = app.container.repository
 
     val total: StateFlow<Int> = repository.total.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), 0
@@ -33,33 +23,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val customers: StateFlow<List<CustomerEntity>> = repository.customers.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList()
     )
-    val history: StateFlow<List<SyncHistoryEntity>> = repository.history.stateIn(
+    val history: StateFlow<List<CaptureHistoryEntity>> = repository.history.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList()
     )
-    val appSettings: StateFlow<AppSettings> = settings.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings()
-    )
+    val monitoring: StateFlow<Boolean> = CaptureSessionStore.monitoring
+    val pendingPhone = CaptureSessionStore.pendingPhone
+    val scanStatus = CaptureSessionStore.scanStatus
 
-    private val _syncing = kotlinx.coroutines.flow.MutableStateFlow(false)
-    val syncing: StateFlow<Boolean> = _syncing.asStateFlow()
     private val _message = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
-    val message: StateFlow<String?> = _message
+    val message: StateFlow<String?> = _message.asStateFlow()
 
-    fun syncNow() {
+    fun startMonitoring() {
+        CaptureSessionStore.startMonitoring()
+        _message.value = "Pantauan lokal diaktifkan"
+    }
+
+    fun stopMonitoring() {
+        CaptureSessionStore.stopMonitoring()
+        _message.value = "Pantauan dihentikan"
+    }
+
+    fun approvePendingPhone() {
+        val pending = CaptureSessionStore.pendingPhone.value ?: return
         viewModelScope.launch {
-            _syncing.value = true
-            _message.value = null
-            _message.value = repository.sync().message
-            _syncing.value = false
+            val result = repository.recordApprovedCandidate(pending.normalizedPhone)
+            CaptureSessionStore.clearCandidate()
+            _message.value = result.message
         }
     }
 
-    fun saveSettings(newSettings: AppSettings) {
-        viewModelScope.launch {
-            (getApplication<WaContactApplication>().container.preferences).save(newSettings)
-            repository.scheduleSync(newSettings.syncEnabled, newSettings.intervalHours)
-            _message.value = "Pengaturan disimpan"
-        }
+    fun dismissPendingPhone() {
+        CaptureSessionStore.clearCandidate()
     }
 
     fun deleteAll() {
