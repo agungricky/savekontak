@@ -8,15 +8,14 @@ import java.util.ArrayDeque
 
 /**
  * Opt-in, local-only observer for WhatsApp UI events.
- * It does not retrieve the window tree and never stores message text, media, or credentials.
+ * It inspects only visible nodes to extract a possible phone pattern and never stores
+ * surrounding message text, media, or credentials.
  */
 class WhatsAppAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         serviceInfo = serviceInfo.apply {
-            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
-                AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
-                AccessibilityEvent.TYPE_VIEW_SCROLLED
+            eventTypes = AccessibilityEvent.TYPE_VIEW_SCROLLED
             packageNames = WHATSAPP_PACKAGES.toTypedArray()
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = flags and AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS.inv()
@@ -28,11 +27,8 @@ class WhatsAppAccessibilityService : AccessibilityService() {
         if (!CaptureSessionStore.monitoring.value) return
         val packageName = event.packageName?.toString() ?: return
         if (packageName !in WHATSAPP_PACKAGES) return
-        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
-            event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED
-        ) return
-        CaptureSessionStore.recordScan(packageName)
+        if (event.eventType != AccessibilityEvent.TYPE_VIEW_SCROLLED) return
+        CaptureSessionStore.recordScroll(packageName)
 
         // Inspect only the currently visible WhatsApp window. We extract a phone pattern,
         // never persist the surrounding message text, and never scroll the UI ourselves.

@@ -23,12 +23,12 @@ object CaptureSessionStore {
         if (_monitoring.value) _pendingPhone.value = PendingPhone(phone)
     }
     fun clearCandidate() { _pendingPhone.value = null }
-    fun recordScan(packageName: String) {
+    fun recordScroll(packageName: String) {
         val current = _scanStatus.value
         _scanStatus.value = current.copy(
             packageName = packageName,
-            eventCount = current.eventCount + 1,
-            lastScanAt = System.currentTimeMillis()
+            scrollEventCount = current.scrollEventCount + 1,
+            lastMonitoringAt = System.currentTimeMillis()
         )
     }
 }

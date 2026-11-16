@@ -18,7 +18,7 @@ Aplikasi Android native Kotlin + Jetpack Compose yang berjalan sepenuhnya lokal/
 - Normalisasi `+62`, `62`, `08`, dan `8` menjadi `628xxxxxxxxxx`.
 - Deduplicasi otomatis menggunakan nomor ternormalisasi sebagai primary key Room.
 - Dashboard total kontak, kontak baru, kandidat nomor, status service, dan riwayat pencatatan.
-- Informasi scanning lokal: package yang aktif, jumlah perubahan layar yang diproses, dan waktu scan terakhir.
+- Informasi scanning lokal: package yang aktif, jumlah event scroll manual yang diproses, dan waktu pemantauan terakhir.
 - Ekspor CSV dan hapus data lokal.
 
 ## Build tanpa Android Studio
@@ -34,7 +34,7 @@ APK debug berada di `app/build/outputs/apk/debug/app-debug.apk`. Workflow `.gith
 ## Struktur teknis
 
 - `MainActivity.kt`: dashboard Compose, kontrol monitoring, izin kontak, intent WhatsApp, CSV.
-- `data/WhatsAppAccessibilityService.kt`: observer event terbatas WhatsApp tanpa window-tree traversal.
+- `data/WhatsAppAccessibilityService.kt`: observer `TYPE_VIEW_SCROLLED` WhatsApp pada node yang sedang terlihat.
 - `data/CaptureSessionStore.kt`: status opt-in dan kandidat sementara di memori.
 - `data/ContactRepository.kt`: normalisasi, deduplikasi, pengecekan kontak, dan Room.
 - `data/AppDatabase.kt`: database lokal pelanggan dan riwayat pencatatan.

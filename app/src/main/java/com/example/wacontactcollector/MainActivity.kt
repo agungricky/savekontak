@@ -281,8 +281,8 @@ private fun MonitoringCard(
                 } else if (!serviceEnabled) {
                     "Scanning menunggu AccessibilityService diaktifkan."
                 } else {
-                    "Scanning: ${scanStatus.eventCount} perubahan layar diproses" +
-                        (scanStatus.lastScanAt?.let { " • terakhir ${formatTime(it)}" } ?: "")
+                    "Scanning: ${scanStatus.scrollEventCount} event scroll diproses" +
+                        (scanStatus.lastMonitoringAt?.let { " • terakhir ${formatTime(it)}" } ?: "")
                 },
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium

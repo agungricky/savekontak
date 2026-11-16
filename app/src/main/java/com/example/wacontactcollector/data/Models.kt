@@ -37,17 +37,6 @@ data class PendingPhone(
 
 data class ScanStatus(
     val packageName: String? = null,
-    val eventCount: Long = 0,
-    val lastScanAt: Long? = null
-)
-
-data class RemoteCustomer(
-    val phone: String,
-    val displayName: String? = null
-)
-
-data class SyncOutcome(
-    val newCount: Int,
-    val receivedCount: Int,
-    val message: String
+    val scrollEventCount: Long = 0,
+    val lastMonitoringAt: Long? = null
 )
